@@ -25,7 +25,15 @@ class TurbinesGold:
         :param df_silver:
         :return:
         """
-        df_anomaly_threshold = df_silver.withColumn(
+        df_silver_analysis = df_silver.select(
+            'turbine_id',
+            'timestamp',
+            'wind_speed',
+            'wind_direction',
+            'power_output',
+            'date',
+        )
+        df_anomaly_threshold = df_silver_analysis.withColumn(
             'date', F.to_date(F.col('timestamp'))
         ).groupby(
             'turbine_id'
@@ -40,19 +48,23 @@ class TurbinesGold:
             F.col('mean_power_output') - 2 * F.col('stddev_power_output')
         ).drop('stddev_power_output', 'mean_power_output')
 
-        df_anomaly_status = df_silver.join(
+        df_anomaly_status = df_silver_analysis.join(
             df_anomaly_threshold,
             on='turbine_id',
             how='left'
         )
         anomaly_filter = ((
-                    df_silver.power_output < df_anomaly_threshold.anomaly_lower_threshold
+                    df_silver_analysis.power_output < df_anomaly_threshold.anomaly_lower_threshold
             ) |
             (
-                    df_silver.power_output > df_anomaly_threshold.anomaly_upper_threshold
+                    df_silver_analysis.power_output > df_anomaly_threshold.anomaly_upper_threshold
             ))
         df_anomalies = df_anomaly_status.filter(
             anomaly_filter
+        ).drop(
+            'anomaly_upper_threshold',
+            'anomaly_lower_threshold',
+            'date',
         )
 
         df_summary_stats = df_anomaly_status.filter(
@@ -76,6 +88,7 @@ class TurbinesGold:
         :param df_anomalies: Anomalies dataframe
         :return:
         """
+
         delta_upsert(
             self.spark,
             df_summary_stats,
@@ -90,7 +103,7 @@ class TurbinesGold:
             df_anomalies,
             self.spark.catalog.tableExists('turbine_anomalies', 'gold'),
             'gold.turbine_anomalies',
-            ['date'],
+            ['turbine_id'],
             "source.turbine_id = target.turbine_id AND source.timestamp = target.timestamp",
         )
 

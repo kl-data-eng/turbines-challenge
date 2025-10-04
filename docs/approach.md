@@ -7,6 +7,8 @@ Summary:
 The bronze pipeline ingests new raw data, casts the columns and saves to the bronze layer.
 We aim to preserve data integrity and keep as close to the source data as possible
 
+Data in the folder `data/raw_missing` has been used to test the logic in this data. 
+
 Assumptions:
 
 - Missed entries:
@@ -31,6 +33,7 @@ Assumptions:
 - Impute data using pyspark imputer
   - We impute missing values to provide a full dataset, but add a binary `imputed` column to indicate which rows have been imputed in case end users would like to filter out this data.
 - Partitioning
+- Before imputing values we generate a dataframe containing all possible timestamps for the period for which we are ingesting data to ensure all intervals are covered 
   - We partition the data by date for quicker queries on date-based aggregations
 
 #### Gold Layer
