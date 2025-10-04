@@ -6,9 +6,8 @@ def get_spark_session():
         'local[*]'
     ).config(
         'spark.sql.warehouse.dir', 'spark-warehouse'
-    ).config(
-        'spark.sql.sources.default', 'delta'
     ).getOrCreate()
+
 
 def delta_upsert(
         spark,
@@ -31,10 +30,10 @@ def delta_upsert(
             .execute()
         )
     else:
-        df.write.format(
-            'delta'
-        ).mode(
+        df.write.mode(
             'overwrite'
+        # ).format(
+        #     'delta'
         ).partitionBy(
             *partition_columns
         ).saveAsTable(path)

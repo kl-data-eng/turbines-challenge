@@ -1,5 +1,6 @@
-from pyspark.sql import functions as F
+from pyspark.sql import functions as F, SparkSession
 from turbines.utils.utils import get_spark_session
+
 
 class TurbinesBronze:
     def __init__(self):
@@ -73,7 +74,11 @@ class TurbinesBronze:
         :return: None
         """
         # append because we're assuming we're only ingesting new data
-        df_bronze.write.mode('append').saveAsTable('bronze.turbines')
+        df_bronze.write.mode(
+            'append'
+            ).format(
+                'delta'
+            ).saveAsTable('bronze.turbines')
 
 
 if __name__ == "__main__":
